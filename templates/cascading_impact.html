@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Cascading Impact Analysis - Flight Scheduling MVP{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2><i class="bi bi-diagram-3 text-primary"></i> Cascading Impact Analysis</h2>
+    <p class="text-muted">Understand how flight delays create ripple effects across the network</p>
+</div>
+
+{% if error %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% else %}
+
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="network-stat">
+            <div class="stat-icon bg-primary">
+                <i class="bi bi-diagram-2"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ analysis.network_size }}</h3>
+                <p>Total Flights</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="network-stat">
+            <div class="stat-icon bg-info">
+                <i class="bi bi-arrow-left-right"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ analysis.connections }}</h3>
+                <p>Dependencies</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="network-stat">
+            <div class="stat-icon bg-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ analysis.high_impact_flights|length }}</h3>
+                <p>High Impact</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="network-stat">
+            <div class="stat-icon bg-success">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "%.3f"|format(analysis.avg_centrality) }}</h3>
+                <p>Avg Centrality</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-graph-down"></i> High-Impact Flight Network</h5>
+                <p class="text-muted mb-0">Flights with the highest potential for causing delays</p>
+            </div>
+            <div id="networkChart"></div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="impact-flights-card">
+            <h5><i class="bi bi-star"></i> Critical Flights</h5>
+            <div class="impact-list">
+                {% for flight, impact in analysis.high_impact_flights[:5] %}
+                <div class="impact-flight">
+                    <div class="flight-info">
+                        <strong>{{ flight }}</strong>
+                        <div class="impact-score">
+                            <div class="score-bar">
+                                <div class="score-fill" style="width: {{ (impact * 100)|round }}%"></div>
+                            </div>
+                            <span>{{ "%.3f"|format(impact) }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="analysis-insights">
+            <h5><i class="bi bi-lightbulb text-warning"></i> Network Insights</h5>
+            <div class="insight-grid">
+                <div class="insight-item">
+                    <i class="bi bi-arrow-repeat text-primary"></i>
+                    <div>
+                        <h6>Dependency Chains</h6>
+                        <p>{{ analysis.connections }} flight dependencies identified that could cause cascading delays</p>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <i class="bi bi-bullseye text-danger"></i>
+                    <div>
+                        <h6>Critical Points</h6>
+                        <p>{{ analysis.high_impact_flights|length }} flights have high network centrality and impact potential</p>
+                    </div>
+                </div>
+                <div class="insight-item">
+                    <i class="bi bi-shield-check text-success"></i>
+                    <div>
+                        <h6>Risk Mitigation</h6>
+                        <p>Focus monitoring and contingency planning on high-impact flights</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="mitigation-strategies">
+            <h5><i class="bi bi-shield-shaded text-success"></i> Mitigation Strategies</h5>
+            <div class="strategy-list">
+                <div class="strategy-item">
+                    <div class="strategy-icon bg-primary">1</div>
+                    <div class="strategy-content">
+                        <h6>Priority Monitoring</h6>
+                        <p>Closely monitor high-impact flights for early delay detection</p>
+                    </div>
+                </div>
+                <div class="strategy-item">
+                    <div class="strategy-icon bg-warning">2</div>
+                    <div class="strategy-content">
+                        <h6>Buffer Time</h6>
+                        <p>Add buffer time to critical flight connections</p>
+                    </div>
+                </div>
+                <div class="strategy-item">
+                    <div class="strategy-icon bg-info">3</div>
+                    <div class="strategy-content">
+                        <h6>Alternative Routes</h6>
+                        <p>Prepare backup plans for high-centrality flights</p>
+                    </div>
+                </div>
+                <div class="strategy-item">
+                    <div class="strategy-icon bg-success">4</div>
+                    <div class="strategy-content">
+                        <h6>Resource Allocation</h6>
+                        <p>Ensure adequate resources for critical operations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render network impact chart
+    const chartData = {{ chart_json|safe }};
+    if (chartData && Object.keys(chartData).length > 0) {
+        Plotly.newPlot('networkChart', chartData.data, chartData.layout, {responsive: true});
+    }
+</script>
+{% endblock %}

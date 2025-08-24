@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ city_name }} - Flight Delay Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2><i class="bi bi-geo-alt text-primary"></i> {{ city_name }} Flight Analysis</h2>
+            <p class="text-muted">Detailed delay patterns for flights to/from {{ city_name }}</p>
+        </div>
+        <a href="{{ url_for('city_analysis') }}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left"></i> Back to All Cities
+        </a>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-primary">
+                <i class="bi bi-airplane"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ analysis.total_flights }}</h3>
+                <p class="kpi-label">Total Flights</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-warning">
+                <i class="bi bi-percent"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ analysis.delay_rate }}%</h3>
+                <p class="kpi-label">Delay Rate</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-info">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ analysis.avg_delay }}</h3>
+                <p class="kpi-label">Avg Delay (min)</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ analysis.max_delay }}</h3>
+                <p class="kpi-label">Max Delay (min)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-graph-up"></i> Hourly Delay Patterns for {{ city_name }}</h5>
+            </div>
+            <div id="cityDetailChart"></div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="info-card">
+            <h5 class="mb-3"><i class="bi bi-lightbulb"></i> Key Insights</h5>
+            <div class="insight-item">
+                <i class="bi bi-clock text-info"></i>
+                <span>Average delay is {{ analysis.avg_delay }} minutes</span>
+            </div>
+            <div class="insight-item">
+                <i class="bi bi-percent text-warning"></i>
+                <span>{{ analysis.delay_rate }}% of flights are delayed</span>
+            </div>
+            <div class="insight-item">
+                <i class="bi bi-exclamation-triangle text-danger"></i>
+                <span>Maximum delay recorded: {{ analysis.max_delay }} minutes</span>
+            </div>
+            <div class="insight-item">
+                <i class="bi bi-airplane text-primary"></i>
+                <span>{{ analysis.total_flights }} flights analyzed</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sample Flights Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-table"></i> Sample Flights</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Flight Number</th>
+                            <th>Delay (min)</th>
+                            <th>Status</th>
+                            <th>Hour</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if analysis.sample_flights %}
+                            {% for flight in analysis.sample_flights %}
+                            <tr>
+                                <td><strong>{{ flight.flight_number }}</strong></td>
+                                <td>
+                                    <span class="badge {% if flight.delay_minutes > 60 %}bg-danger{% elif flight.delay_minutes > 30 %}bg-warning{% elif flight.delay_minutes > 15 %}bg-info{% else %}bg-success{% endif %}">
+                                        {{ flight.delay_minutes }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if flight.status == 'Delayed' %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ flight.status }}
+                                    </span>
+                                </td>
+                                <td>{{ flight.hour }}:00</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No flight data available</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render city detail chart
+    const chartData = {{ chart_json|safe }};
+    if (chartData && Object.keys(chartData).length > 0) {
+        Plotly.purge('cityDetailChart');
+        Plotly.newPlot('cityDetailChart', chartData.data, chartData.layout, {
+            responsive: true,
+            displayModeBar: true
+        });
+    }
+</script>
+{% endblock %}

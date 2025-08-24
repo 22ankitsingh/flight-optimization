@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Best Times Analysis - Flight Scheduling MVP{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2><i class="bi bi-clock-history text-primary"></i> Best Times Analysis</h2>
+    <p class="text-muted">Optimize your flight schedules based on historical delay patterns</p>
+</div>
+
+{% if error %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% else %}
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="recommendation-card">
+            <div class="rec-icon bg-success">
+                <i class="bi bi-arrow-down-circle"></i>
+            </div>
+            <div class="rec-content">
+                <h4>Best Arrival Time</h4>
+                <h2 class="text-success">{{ analysis.best_arrival_time }}</h2>
+                <p class="text-muted">Optimal time for scheduled arrivals</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+        <div class="recommendation-card">
+            <div class="rec-icon bg-info">
+                <i class="bi bi-arrow-up-circle"></i>
+            </div>
+            <div class="rec-content">
+                <h4>Best Departure Time</h4>
+                <h2 class="text-info">{{ analysis.best_departure_time }}</h2>
+                <p class="text-muted">Optimal time for scheduled departures</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-bar-chart"></i> Delay Patterns by Hour</h5>
+                <p class="text-muted mb-0">Average delays throughout the day</p>
+            </div>
+            <div id="delayChart"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="insights-card">
+            <h5><i class="bi bi-lightbulb text-warning"></i> Key Insights</h5>
+            <div class="insight-list">
+                <div class="insight-item">
+                    <span class="badge bg-success">Early Morning</span>
+                    <p>5-7 AM typically has the lowest delays for arrivals</p>
+                </div>
+                <div class="insight-item">
+                    <span class="badge bg-warning">Peak Hours</span>
+                    <p>7-9 AM and 5-8 PM show higher average delays</p>
+                </div>
+                <div class="insight-item">
+                    <span class="badge bg-info">Late Night</span>
+                    <p>10 PM - 12 AM are good for departures</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="recommendations-card">
+            <h5><i class="bi bi-check-circle text-success"></i> Recommendations</h5>
+            <div class="rec-list">
+                <div class="rec-item">
+                    <i class="bi bi-arrow-right text-primary"></i>
+                    <p><strong>Schedule arrivals</strong> during early morning hours (5-7 AM) for minimal delays</p>
+                </div>
+                <div class="rec-item">
+                    <i class="bi bi-arrow-right text-primary"></i>
+                    <p><strong>Avoid peak hours</strong> (7-9 AM, 5-8 PM) for critical flights</p>
+                </div>
+                <div class="rec-item">
+                    <i class="bi bi-arrow-right text-primary"></i>
+                    <p><strong>Consider weather patterns</strong> when scheduling during monsoon season</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render delay analysis chart
+    const chartData = {{ chart_json|safe }};
+    if (chartData && Object.keys(chartData).length > 0) {
+        Plotly.newPlot('delayChart', chartData.data, chartData.layout, {responsive: true});
+    }
+</script>
+{% endblock %}

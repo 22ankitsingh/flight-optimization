@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Traffic Analysis - Flight Scheduling MVP{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2><i class="bi bi-graph-up text-primary"></i> Airport Traffic Analysis</h2>
+    <p class="text-muted">Understand congestion patterns and optimize slot allocation</p>
+</div>
+
+{% if error %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% else %}
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="traffic-stat-card">
+            <div class="stat-icon bg-danger">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+            <div class="stat-content">
+                <h4>Busiest Hour</h4>
+                <h2 class="text-danger">{{ analysis.busiest_hour }}</h2>
+                <p class="text-muted">Peak traffic period</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+        <div class="traffic-stat-card">
+            <div class="stat-icon bg-warning">
+                <i class="bi bi-airplane-fill"></i>
+            </div>
+            <div class="stat-content">
+                <h4>Max Flights/Hour</h4>
+                <h2 class="text-warning">{{ analysis.max_flights_per_hour }}</h2>
+                <p class="text-muted">Peak hour capacity</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-activity"></i> Hourly Traffic Distribution</h5>
+                <p class="text-muted mb-0">Arrivals and departures throughout the day</p>
+            </div>
+            <div id="trafficChart"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="traffic-zones-card">
+            <h5><i class="bi bi-speedometer2 text-success"></i> Low Traffic</h5>
+            <div class="time-slots">
+                <span class="time-badge bg-success">00:00 - 05:00</span>
+                <span class="time-badge bg-success">22:00 - 23:59</span>
+            </div>
+            <p class="text-muted mt-2">Ideal for maintenance and non-critical operations</p>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="traffic-zones-card">
+            <h5><i class="bi bi-speedometer2 text-warning"></i> Moderate Traffic</h5>
+            <div class="time-slots">
+                <span class="time-badge bg-warning">05:00 - 07:00</span>
+                <span class="time-badge bg-warning">14:00 - 17:00</span>
+                <span class="time-badge bg-warning">20:00 - 22:00</span>
+            </div>
+            <p class="text-muted mt-2">Good balance of activity and efficiency</p>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="traffic-zones-card">
+            <h5><i class="bi bi-speedometer2 text-danger"></i> High Traffic</h5>
+            <div class="time-slots">
+                <span class="time-badge bg-danger">07:00 - 09:00</span>
+                <span class="time-badge bg-danger">17:00 - 20:00</span>
+            </div>
+            <p class="text-muted mt-2">Peak congestion - expect delays</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="optimization-tips">
+            <h5><i class="bi bi-gear-fill text-primary"></i> Optimization Tips</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="tip-card">
+                        <i class="bi bi-check-circle text-success"></i>
+                        <h6>Slot Management</h6>
+                        <p>Distribute flights evenly across available hours to reduce congestion</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="tip-card">
+                        <i class="bi bi-check-circle text-success"></i>
+                        <h6>Peak Avoidance</h6>
+                        <p>Schedule non-essential flights outside of 7-9 AM and 5-8 PM windows</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render traffic analysis chart
+    const chartData = {{ chart_json|safe }};
+    if (chartData && Object.keys(chartData).length > 0) {
+        Plotly.newPlot('trafficChart', chartData.data, chartData.layout, {responsive: true});
+    }
+</script>
+{% endblock %}

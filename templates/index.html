@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Flight Scheduling MVP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="hero-section text-center mb-5">
+            <h1 class="display-4 text-primary fw-bold">Mumbai Airport Analytics</h1>
+            <p class="lead text-muted">Real-time flight scheduling insights and optimization</p>
+        </div>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- KPI Cards -->
+<div class="row mb-5">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-primary">
+                <i class="bi bi-airplane"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ kpis.total_flights }}</h3>
+                <p class="kpi-label">Total Flights</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-warning">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ kpis.delayed_flights }}</h3>
+                <p class="kpi-label">Delayed Flights</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-danger">
+                <i class="bi bi-percent"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ kpis.delay_percentage }}%</h3>
+                <p class="kpi-label">Delay Rate</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-info">
+                <i class="bi bi-stopwatch"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ kpis.avg_delay_minutes }}</h3>
+                <p class="kpi-label">Avg Delay (min)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-pie-chart"></i> Flight Status Overview</h5>
+            </div>
+            <div id="statusChart"></div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="info-card">
+            <h5 class="mb-3"><i class="bi bi-lightbulb"></i> Key Insights</h5>
+            <div class="insight-item">
+                <i class="bi bi-check-circle text-success"></i>
+                <span>{{ (100 - kpis.delay_percentage)|round(1) }}% flights arrive on time</span>
+            </div>
+            <div class="insight-item">
+                <i class="bi bi-clock text-warning"></i>
+                <span>Average delay is {{ kpis.avg_delay_minutes }} minutes</span>
+            </div>
+            <div class="insight-item">
+                <i class="bi bi-graph-up text-info"></i>
+                <span>Peak hours show higher delays</span>
+            </div>
+            <div class="insight-item">
+                <i class="bi bi-gear text-primary"></i>
+                <span>Use schedule tuning for optimization</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="action-cards">
+            <h5 class="mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
+            <div class="row">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <a href="{{ url_for('best_times') }}" class="action-card">
+                        <i class="bi bi-clock-history"></i>
+                        <h6>Find Best Times</h6>
+                        <p>Optimize departure/arrival schedules</p>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <a href="{{ url_for('busiest_slots') }}" class="action-card">
+                        <i class="bi bi-bar-chart"></i>
+                        <h6>Traffic Analysis</h6>
+                        <p>Identify peak congestion periods</p>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <a href="{{ url_for('schedule_tuning') }}" class="action-card">
+                        <i class="bi bi-sliders"></i>
+                        <h6>Schedule Tuning</h6>
+                        <p>Predict impact of time changes</p>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <a href="{{ url_for('city_analysis') }}" class="action-card">
+                        <i class="bi bi-geo-alt"></i>
+                        <h6>City Analysis</h6>
+                        <p>Analyze delays by city</p>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <a href="{{ url_for('chatbot') }}" class="action-card">
+                        <i class="bi bi-chat-dots"></i>
+                        <h6>AI Assistant</h6>
+                        <p>Ask questions about scheduling</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render flight status chart with cache busting
+    const chartData = JSON.parse('{{ chart_json|safe }}');
+    if (chartData && Object.keys(chartData).length > 0) {
+        // Clear any existing chart
+        Plotly.purge('statusChart');
+        // Render new chart
+        Plotly.newPlot('statusChart', chartData.data, chartData.layout, {
+            responsive: true,
+            displayModeBar: true
+        });
+    }
+</script>
+{% endblock %}

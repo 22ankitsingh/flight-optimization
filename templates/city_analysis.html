@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}City Delay Analysis - Flight Scheduling MVP{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2><i class="bi bi-geo-alt text-primary"></i> Flight Delays by City</h2>
+    <p class="text-muted">Analyze delay patterns for flights to/from different cities</p>
+</div>
+
+{% if error %}
+<div class="alert alert-warning" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% endif %}
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-primary">
+                <i class="bi bi-building"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">{{ analysis.total_cities }}</h3>
+                <p class="kpi-label">Cities Analyzed</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-warning">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">
+                    {% if analysis.top_cities %}
+                        {% set first_city = analysis.top_cities.keys() | list | first %}
+                        {{ analysis.top_cities[first_city]['delay_rate'] }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </h3>
+                <p class="kpi-label">Highest Delay Rate</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="kpi-card">
+            <div class="kpi-icon bg-info">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="kpi-content">
+                <h3 class="kpi-number">
+                    {% if analysis.top_cities %}
+                        {% set first_city = analysis.top_cities.keys() | list | first %}
+                        {{ analysis.top_cities[first_city]['avg_delay'] }}
+                    {% else %}
+                        0
+                    {% endif %}
+                </h3>
+                <p class="kpi-label">Highest Avg Delay (min)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-bar-chart"></i> Delay Rates by City</h5>
+            </div>
+            <div id="cityChart"></div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="info-card">
+            <h5 class="mb-3"><i class="bi bi-lightbulb"></i> Key Insights</h5>
+            {% if analysis.top_cities %}
+                {% set top_city = analysis.top_cities.keys() | list | first %}
+                <div class="insight-item">
+                    <i class="bi bi-exclamation-triangle text-warning"></i>
+                    <span>{{ top_city }} has the highest delay rate at {{ analysis.top_cities[top_city]['delay_rate'] }}%</span>
+                </div>
+                <div class="insight-item">
+                    <i class="bi bi-clock text-info"></i>
+                    <span>Average delay for {{ top_city }} is {{ analysis.top_cities[top_city]['avg_delay'] }} minutes</span>
+                </div>
+                <div class="insight-item">
+                    <i class="bi bi-airplane text-primary"></i>
+                    <span>{{ analysis.top_cities[top_city]['total_flights'] }} flights analyzed for {{ top_city }}</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- City Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-table"></i> Detailed City Statistics</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>City</th>
+                            <th>Total Flights</th>
+                            <th>Delay Rate</th>
+                            <th>Avg Delay (min)</th>
+                            <th>Max Delay (min)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if analysis.city_stats %}
+                            {% for city, stats in analysis.city_stats.items() %}
+                            <tr>
+                                <td><strong>{{ city }}</strong></td>
+                                <td>{{ stats.total_flights }}</td>
+                                <td>
+                                    <span class="badge {% if stats.delay_rate > 50 %}bg-danger{% elif stats.delay_rate > 30 %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ stats.delay_rate }}%
+                                    </span>
+                                </td>
+                                <td>{{ stats.avg_delay }}</td>
+                                <td>{{ stats.max_delay }}</td>
+                                <td>
+                                    <a href="{{ url_for('city_detail', city_name=city) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-arrow-right"></i> Details
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No city data available</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Render city delay chart
+    const chartData = JSON.parse('{{ chart_json|safe }}');
+    if (chartData && Object.keys(chartData).length > 0) {
+        Plotly.purge('cityChart');
+        Plotly.newPlot('cityChart', chartData.data, chartData.layout, {
+            responsive: true,
+            displayModeBar: true
+        });
+    }
+</script>
+{% endblock %}

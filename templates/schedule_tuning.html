@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Tuning - Flight Scheduling MVP{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2><i class="bi bi-sliders text-primary"></i> Schedule Tuning Simulator</h2>
+    <p class="text-muted">Predict the impact of schedule changes using ML models</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="tuning-card">
+            <h5><i class="bi bi-gear"></i> Flight Schedule Simulator</h5>
+            <form id="tuningForm">
+                <div class="mb-3">
+                    <label for="flightNumber" class="form-label">Flight Number</label>
+                    <select class="form-select" id="flightNumber" required>
+                        <option value="">Select a flight number...</option>
+                        {% for flight_num in flight_numbers %}
+                        <option value="{{ flight_num }}">{{ flight_num }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Choose the flight number to analyze</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="newTime" class="form-label">Proposed New Time</label>
+                    <input type="time" class="form-control" id="newTime" required>
+                    <div class="form-text">Select your proposed schedule time</div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-calculator"></i> Predict Impact
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-8 mb-4">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h5><i class="bi bi-graph-up"></i> Prediction Results</h5>
+                <p class="text-muted mb-0">ML-based delay prediction for your proposed schedule</p>
+            </div>
+            <div id="predictionChart"></div>
+            <div id="loadingMessage" class="text-center py-5" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 class="text-muted mt-3">Loading chart data...</h5>
+            </div>
+            <div id="noResultsMessage" class="text-center py-5" style="display: none;">
+                <i class="bi bi-info-circle text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">Enter flight details above to see predictions</h5>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="resultsSection" style="display: none;">
+    <div class="col-lg-6 mb-4">
+        <div class="prediction-results">
+            <h5><i class="bi bi-target"></i> Prediction Summary</h5>
+            <div id="predictionSummary">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="recommendations-card">
+            <h5><i class="bi bi-lightbulb"></i> AI Recommendations</h5>
+            <div id="aiRecommendations">
+                <!-- Recommendations will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="how-it-works">
+            <h5><i class="bi bi-question-circle"></i> How It Works</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h6>Data Analysis</h6>
+                        <p>Analyze historical delay patterns and traffic congestion</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h6>ML Prediction</h6>
+                        <p>Apply machine learning models to predict delay impact</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h6>Optimization</h6>
+                        <p>Provide actionable recommendations for schedule improvement</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('tuningForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const flightNumber = document.getElementById('flightNumber').value;
+    const newTime = document.getElementById('newTime').value;
+    
+    if (!flightNumber || !newTime) {
+        alert('Please fill in all fields');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Analyzing...';
+    submitBtn.disabled = true;
+    
+    // Show loading message and hide other messages
+    document.getElementById('loadingMessage').style.display = 'block';
+    document.getElementById('noResultsMessage').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+    
+    try {
+        const response = await fetch('/schedule_tuning', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                flight_number: flightNumber,
+                new_time: newTime
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayPredictionResults(data.prediction, data.chart_json);
+            document.getElementById('noResultsMessage').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+        } else {
+            alert('Prediction failed: ' + data.error);
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('noResultsMessage').style.display = 'block';
+        }
+        
+    } catch (error) {
+        alert('Error: ' + error.message);
+        document.getElementById('loadingMessage').style.display = 'none';
+        document.getElementById('noResultsMessage').style.display = 'block';
+    } finally {
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+function displayPredictionResults(prediction, chartData) {
+    // Always hide loading message when displaying results
+    document.getElementById('loadingMessage').style.display = 'none';
+    // Display prediction summary
+    const summaryHtml = `
+        <div class="prediction-metric">
+            <div class="metric-icon bg-info">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="metric-content">
+                <h4>${prediction.predicted_delay} min</h4>
+                <p>Predicted Delay</p>
+            </div>
+        </div>
+        
+        <div class="prediction-metric">
+            <div class="metric-icon ${prediction.impact_vs_average > 0 ? 'bg-danger' : 'bg-success'}">
+                <i class="bi bi-${prediction.impact_vs_average > 0 ? 'arrow-up' : 'arrow-down'}"></i>
+            </div>
+            <div class="metric-content">
+                <h4>${prediction.impact_vs_average > 0 ? '+' : ''}${prediction.impact_vs_average} min</h4>
+                <p>vs. Average</p>
+            </div>
+        </div>
+    `;
+    document.getElementById('predictionSummary').innerHTML = summaryHtml;
+    
+    // Display recommendations
+    const recommendationClass = prediction.recommendation === 'Good choice' ? 'success' : 
+                               prediction.recommendation.includes('peak') ? 'warning' : 'info';
+    const recommendationIcon = prediction.recommendation === 'Good choice' ? 'check-circle' : 
+                              prediction.recommendation.includes('peak') ? 'exclamation-triangle' : 'info-circle';
+    
+    const recommendationHtml = `
+        <div class="alert alert-${recommendationClass}">
+            <i class="bi bi-${recommendationIcon}"></i>
+            <strong>${prediction.recommendation}</strong>
+        </div>
+        
+        <div class="rec-details">
+            <h6>Flight: ${prediction.flight_number}</h6>
+            <p>Proposed Time: ${prediction.new_time}</p>
+            <p class="text-muted">This analysis is based on historical delay patterns and traffic congestion data.</p>
+        </div>
+    `;
+    document.getElementById('aiRecommendations').innerHTML = recommendationHtml;
+    
+    // Hide loading message before rendering chart
+    document.getElementById('loadingMessage').style.display = 'none';
+    
+    // Render chart
+    if (chartData && Object.keys(chartData).length > 0) {
+        const parsedChart = typeof chartData === 'string' ? JSON.parse(chartData) : chartData;
+        Plotly.newPlot('predictionChart', parsedChart.data, parsedChart.layout, {responsive: true});
+    }
+}
+
+// Show initial message - ensure loading is hidden and no results is shown
+document.getElementById('loadingMessage').style.display = 'none';
+document.getElementById('noResultsMessage').style.display = 'block';
+</script>
+{% endblock %}
